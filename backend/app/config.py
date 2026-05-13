@@ -48,6 +48,9 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = ""
 
+    # Google Sign-In (OAuth ID token from frontend; must match Web client ID in Google Cloud Console)
+    GOOGLE_CLIENT_ID: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

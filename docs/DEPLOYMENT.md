@@ -142,6 +142,8 @@ Render free tier sleeps after inactivity; first request after sleep can take ~30
 
 Commit and push to your account. Connect Vercel and Render to the same repository; redeploy when you merge to `main`.
 
+See **[docs/VERCEL.md](VERCEL.md)** for Vercel live deploy + Google Sign-In (`VITE_GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_ID`) checklist.
+
 ### 5. Production notes
 
 - **Resume uploads** on Render use ephemeral disk unless you attach a persistent disk or switch to S3-style storage.

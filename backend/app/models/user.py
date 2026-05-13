@@ -14,6 +14,12 @@ class UserLogin(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    """ID token (JWT) from Google Identity Services / @react-oauth/google `credential`."""
+
+    credential: str = Field(..., min_length=10)
+
+
 class UserResponse(BaseModel):
     id: str
     name: str
@@ -24,7 +30,7 @@ class UserResponse(BaseModel):
 class UserInDB(BaseModel):
     name: str
     email: str
-    hashed_password: str
+    hashed_password: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     settings: dict = Field(default_factory=lambda: {
         "daily_apply_limit": 20,

@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext.jsx'
+
+const hasGoogle = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 
 export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { register } = useAuth()
+  const { register, loginWithGoogle } = useAuth()
   const nav = useNavigate()
 
   async function onSubmit(e) {
@@ -26,6 +29,20 @@ export default function Register() {
     }
   }
 
+  async function onGoogleSuccess(credential) {
+    if (!credential) return
+    setSubmitting(true)
+    try {
+      await loginWithGoogle(credential)
+      toast.success('Signed in with Google!')
+      nav('/dashboard')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Google sign-in failed')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950 px-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md card p-8">
@@ -35,6 +52,23 @@ export default function Register() {
         </Link>
         <h1 className="text-2xl font-bold">Create account</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">Start applying to jobs on autopilot</p>
+
+        {hasGoogle && (
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <GoogleLogin
+              text="signup_with"
+              onSuccess={(res) => onGoogleSuccess(res.credential)}
+              onError={() => toast.error('Google sign-in was cancelled or failed')}
+              useOneTap={false}
+            />
+            <div className="flex w-full items-center gap-3 text-xs text-slate-500">
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+              or with email
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            </div>
+          </div>
+        )}
+
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Name</label>

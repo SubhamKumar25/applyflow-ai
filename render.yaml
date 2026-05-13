@@ -20,3 +20,5 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false

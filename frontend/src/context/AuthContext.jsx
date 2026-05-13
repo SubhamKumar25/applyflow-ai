@@ -34,13 +34,20 @@ export function AuthProvider({ children }) {
     return r.data.user
   }
 
+  async function loginWithGoogle(credential) {
+    const r = await api.post('/auth/google', { credential })
+    localStorage.setItem('applyflow_token', r.data.access_token)
+    setUser(r.data.user)
+    return r.data.user
+  }
+
   function logout() {
     localStorage.removeItem('applyflow_token')
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   )
