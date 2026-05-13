@@ -1,7 +1,5 @@
-# Render (backend) redeploy — Render dashboard se "Deploy hook" URL copy karo
-#
-# Variables → ENABLE_RENDER_HOOK = true
-# Secrets   → RENDER_DEPLOY_HOOK_URL = https://api.render.com/deploy/srv-...
+# Render backend redeploy — RENDER_DEPLOY_HOOK_URL secret set karo; warna skip.
+# Hook: Render → Service → Deploy → Deploy hook
 
 name: Trigger Render deploy
 
@@ -20,7 +18,6 @@ on:
 jobs:
   hook:
     runs-on: ubuntu-latest
-    if: vars.ENABLE_RENDER_HOOK == 'true'
 
     steps:
       - name: POST deploy hook

@@ -1,8 +1,7 @@
-# Vercel production deploy from GitHub (push = deploy jab tum enable karo)
-#
-# 1) Variables → ENABLE_VERCEL_CD = true
-# 2) Secrets → VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
-# 3) (Optional) Variables → VITE_API_URL, VITE_GOOGLE_CLIENT_ID (build ke liye)
+# Vercel production deploy from GitHub — secrets milte hi har main push par deploy.
+# Secrets → VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# (Optional) Variables → VITE_API_URL, VITE_GOOGLE_CLIENT_ID
+# Secrets na hon to workflow skip (warning), fail nahi.
 #
 # Details: docs/VERCEL.md
 
@@ -19,10 +18,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: vars.ENABLE_VERCEL_CD == 'true'
 
-    defaults:
-      run:
+    defaults:      run:
         working-directory: frontend
 
     steps:

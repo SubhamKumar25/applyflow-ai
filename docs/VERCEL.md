@@ -38,30 +38,28 @@ After deploy, add the production URL to Google Console **Authorized JavaScript o
 
 ## 3. GitHub se automated deploy (push = production)
 
-Repo me workflows add hain — **ek baar** GitHub par ye set karo, phir har `main` push se deploy chalega.
+Har `main` push par workflows **chalti hain**. **Koi `ENABLE_*` variable zaroori nahi.**
 
 ### Frontend (Vercel)
 
-1. GitHub repo → **Settings** → **Secrets and variables** → **Actions** → **Variables** → **New repository variable**  
-   - Name: `ENABLE_VERCEL_CD` → Value: `true`
+**Secrets** (GitHub → Settings → Secrets and variables → **Actions** → **Secrets**):
 
-2. **Secrets** (same page → **Secrets** tab):  
-   - `VERCEL_TOKEN` — [Vercel → Account → Tokens](https://vercel.com/account/tokens)  
-   - `VERCEL_ORG_ID` — Team/User ID (Vercel project **Settings → General** ya `vercel link` ke baad `.vercel/project.json`)  
-   - `VERCEL_PROJECT_ID` — Project **Settings → General → Project ID**
+- `VERCEL_TOKEN` — [Vercel → Account → Tokens](https://vercel.com/account/tokens)  
+- `VERCEL_ORG_ID` — Vercel project **Settings → General** (Team slug / ID)  
+- `VERCEL_PROJECT_ID` — **Settings → General → Project ID**
 
-3. **Variables** (optional, taaki build GitHub par ho aur env yahi se aaye):  
-   - `VITE_API_URL` = backend URL  
-   - `VITE_GOOGLE_CLIENT_ID` = Google Web Client ID  
+Jab ye teen set ho jayein, `frontend/**` change hone par **Deploy frontend (Vercel)** workflow `dist` build karke production par deploy karegi.
 
-Workflow: **Actions** → **Deploy frontend (Vercel)** — `main` par `frontend/**` change hone par chalega.
+**Variables** (optional — build-time env GitHub se):
 
-### Backend (Render hook)
+- `VITE_API_URL`  
+- `VITE_GOOGLE_CLIENT_ID`  
 
-1. Variable: `ENABLE_RENDER_HOOK` = `true`  
-2. Secret: `RENDER_DEPLOY_HOOK_URL` = Render service → **Deploy** → **Deploy Hook** URL  
+### Backend (Render)
 
-Workflow: **Trigger Render deploy** — `backend/`, `ai/`, `automation/` change par hook hit karega.
+**Secret:** `RENDER_DEPLOY_HOOK_URL` = Render service → **Deploy** → **Deploy hook** URL  
+
+Hook set na ho to workflow warning dekar **skip** ho jati hai (fail nahi).
 
 ---
 
@@ -115,4 +113,4 @@ Run API + `npm run dev`, open Login → **Sign in with Google**.
 3. Vercel पर project का **Root Directory** = `frontend`, `VITE_API_URL` = backend URL।  
 4. Render पर `CORS_ORIGINS` = Vercel का `https://...` URL।  
 5. GitHub पर branch push करके **Pull Request** बनाएं और merge करें।  
-6. **Auto deploy:** GitHub → Variables: `ENABLE_VERCEL_CD=true` + Vercel secrets; Render: `ENABLE_RENDER_HOOK=true` + `RENDER_DEPLOY_HOOK_URL` (section 3).
+6. **Auto deploy:** GitHub Actions — sirf **Secrets** bharo (`VERCEL_*`, optional `RENDER_DEPLOY_HOOK_URL`); koi extra `ENABLE_*` variable nahi (section 3).
