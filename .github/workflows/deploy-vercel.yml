@@ -1,0 +1,73 @@
+# Vercel production deploy from GitHub (push = deploy jab tum enable karo)
+#
+# 1) Variables → ENABLE_VERCEL_CD = true
+# 2) Secrets → VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# 3) (Optional) Variables → VITE_API_URL, VITE_GOOGLE_CLIENT_ID (build ke liye)
+#
+# Details: docs/VERCEL.md
+
+name: Deploy frontend (Vercel)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-vercel.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_VERCEL_CD == 'true'
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Vercel secrets
+        id: gate
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID missing — docs/VERCEL.md dekho."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ok == 'true'
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Vite env from GitHub Variables
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          : > .env.production
+          if [ -n "${{ vars.VITE_API_URL }}" ]; then echo "VITE_API_URL=${{ vars.VITE_API_URL }}" >> .env.production; fi
+          if [ -n "${{ vars.VITE_GOOGLE_CLIENT_ID }}" ]; then echo "VITE_GOOGLE_CLIENT_ID=${{ vars.VITE_GOOGLE_CLIENT_ID }}" >> .env.production; fi
+
+      - name: Install & build
+        if: steps.gate.outputs.ok == 'true'
+        run: npm ci && npm run build
+
+      - name: Install Vercel CLI
+        if: steps.gate.outputs.ok == 'true'
+        run: npm install -g vercel@39.4.2
+
+      - name: Deploy dist to Vercel (production)
+        if: steps.gate.outputs.ok == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy ./dist --prod --yes --token "$VERCEL_TOKEN"

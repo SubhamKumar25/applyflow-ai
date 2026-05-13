@@ -1,0 +1,35 @@
+# Render (backend) redeploy — Render dashboard se "Deploy hook" URL copy karo
+#
+# Variables → ENABLE_RENDER_HOOK = true
+# Secrets   → RENDER_DEPLOY_HOOK_URL = https://api.render.com/deploy/srv-...
+
+name: Trigger Render deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'ai/**'
+      - 'automation/**'
+      - 'docker/**'
+      - 'render.yaml'
+      - '.github/workflows/trigger-render.yml'
+
+jobs:
+  hook:
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_RENDER_HOOK == 'true'
+
+    steps:
+      - name: POST deploy hook
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL secret set karo (Render → Service → Deploy hook)."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK"
+          echo "Render deploy triggered."

@@ -36,7 +36,36 @@ After deploy, add the production URL to Google Console **Authorized JavaScript o
 
 ---
 
-## 3. Backend (Render) — Google env
+## 3. GitHub se automated deploy (push = production)
+
+Repo me workflows add hain — **ek baar** GitHub par ye set karo, phir har `main` push se deploy chalega.
+
+### Frontend (Vercel)
+
+1. GitHub repo → **Settings** → **Secrets and variables** → **Actions** → **Variables** → **New repository variable**  
+   - Name: `ENABLE_VERCEL_CD` → Value: `true`
+
+2. **Secrets** (same page → **Secrets** tab):  
+   - `VERCEL_TOKEN` — [Vercel → Account → Tokens](https://vercel.com/account/tokens)  
+   - `VERCEL_ORG_ID` — Team/User ID (Vercel project **Settings → General** ya `vercel link` ke baad `.vercel/project.json`)  
+   - `VERCEL_PROJECT_ID` — Project **Settings → General → Project ID**
+
+3. **Variables** (optional, taaki build GitHub par ho aur env yahi se aaye):  
+   - `VITE_API_URL` = backend URL  
+   - `VITE_GOOGLE_CLIENT_ID` = Google Web Client ID  
+
+Workflow: **Actions** → **Deploy frontend (Vercel)** — `main` par `frontend/**` change hone par chalega.
+
+### Backend (Render hook)
+
+1. Variable: `ENABLE_RENDER_HOOK` = `true`  
+2. Secret: `RENDER_DEPLOY_HOOK_URL` = Render service → **Deploy** → **Deploy Hook** URL  
+
+Workflow: **Trigger Render deploy** — `backend/`, `ai/`, `automation/` change par hook hit karega.
+
+---
+
+## 4. Backend (Render) — Google env + CORS
 
 In Render dashboard for the API service, add:
 
@@ -47,7 +76,7 @@ Redeploy the API after saving env.
 
 ---
 
-## 4. GitHub PR
+## 5. GitHub PR (optional workflow)
 
 ```bash
 git checkout -b feature/google-oauth
@@ -60,7 +89,7 @@ Then on GitHub: **Compare & pull request** → merge into `main`. Vercel can aut
 
 ---
 
-## 5. Local test
+## 6. Local test
 
 `frontend/.env.local`:
 
@@ -85,4 +114,5 @@ Run API + `npm run dev`, open Login → **Sign in with Google**.
 2. **Client ID** को Vercel में `VITE_GOOGLE_CLIENT_ID` और Render में `GOOGLE_CLIENT_ID` दोनों में same डालें।  
 3. Vercel पर project का **Root Directory** = `frontend`, `VITE_API_URL` = backend URL।  
 4. Render पर `CORS_ORIGINS` = Vercel का `https://...` URL।  
-5. GitHub पर branch push करके **Pull Request** बनाएं और merge करें।
+5. GitHub पर branch push करके **Pull Request** बनाएं और merge करें।  
+6. **Auto deploy:** GitHub → Variables: `ENABLE_VERCEL_CD=true` + Vercel secrets; Render: `ENABLE_RENDER_HOOK=true` + `RENDER_DEPLOY_HOOK_URL` (section 3).
