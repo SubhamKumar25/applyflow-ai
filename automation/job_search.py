@@ -25,7 +25,7 @@ async def search_all_platforms(query: JobSearchQuery) -> list[JobListing]:
     merged: list[JobListing] = []
     for batch in nested:
         merged.extend(batch)
-    return merged[: query.limit * len(query.platforms)]
+    return merged[: query.limit]
 
 
 async def _safe_search(adapter, query: JobSearchQuery) -> list[JobListing]:

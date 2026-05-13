@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     MAX_RESUME_SIZE_MB: int = 10
     UPLOAD_DIR: str = "./resumes"
 
+    CORS_ORIGINS: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

@@ -1,15 +1,20 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from bson import ObjectId
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
+from app.activity_log import write_log
 from app.auth import get_current_user
 from app.database import get_db
 from app.models.job import (
     ApplicationResponse,
+    ApplyJobRequest,
+    ApplyQueuedResponse,
     CoverLetterRequest,
     JobMatch,
     JobSearchQuery,
 )
+from app.services.apply_execution import run_pending_application
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -28,17 +33,36 @@ async def search_jobs(query: JobSearchQuery, user: dict = Depends(get_current_us
     from ai.matcher import match_jobs_with_resume
 
     matched = await match_jobs_with_resume(jobs, resume)
+    await write_log(
+        user["id"],
+        f"Job search completed ({len(jobs)} listings, {len(matched)} ranked)",
+        "info",
+        {"keywords": query.keywords, "location": query.location},
+    )
     return matched
 
 
-@router.post("/apply/{job_id}")
-async def apply_to_job(job_id: str, user: dict = Depends(get_current_user)):
+@router.post("/apply", response_model=ApplyQueuedResponse, status_code=202)
+async def apply_job(
+    req: ApplyJobRequest,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(get_current_user),
+):
     db = get_db()
     resume = await db.resumes.find_one({"user_id": user["id"], "is_active": True})
     if not resume:
         raise HTTPException(status_code=400, detail="Please upload a resume first")
 
-    # Check daily limit
+    job = req.job
+    if not (job.platform or "").strip():
+        raise HTTPException(status_code=400, detail="Job platform is required")
+    try:
+        from automation.platforms import get_adapter
+
+        get_adapter(job.platform)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     today_count = await db.applications.count_documents({
         "user_id": user["id"],
@@ -50,7 +74,32 @@ async def apply_to_job(job_id: str, user: dict = Depends(get_current_user)):
     if today_count >= limit:
         raise HTTPException(status_code=429, detail=f"Daily apply limit ({limit}) reached")
 
-    return {"status": "queued", "message": "Application queued for processing"}
+    now = datetime.now(timezone.utc)
+    doc = {
+        "user_id": user["id"],
+        "job_title": job.title,
+        "company": job.company,
+        "platform": job.platform,
+        "url": job.url or "",
+        "status": "pending",
+        "applied_at": now,
+        "notes": "Queued for browser automation",
+        "cover_letter": "",
+        "ai_answers": {},
+    }
+    ins = await db.applications.insert_one(doc)
+    app_id = str(ins.inserted_id)
+
+    job_payload = job.model_dump(mode="json")
+    background_tasks.add_task(run_pending_application, app_id, user["id"], job_payload)
+
+    await write_log(user["id"], f"Queued apply: {job.title} @ {job.company}", "info", {"application_id": app_id})
+
+    return ApplyQueuedResponse(
+        application_id=app_id,
+        status="pending",
+        message="Application queued — processing in the background.",
+    )
 
 
 @router.post("/cover-letter")
@@ -127,6 +176,7 @@ async def get_analytics(user: dict = Depends(get_current_user)):
         "by_platform": platform_counts,
         "applied": status_counts.get("applied", 0),
         "pending": status_counts.get("pending", 0),
+        "skipped": status_counts.get("skipped", 0),
         "interview": status_counts.get("interview", 0),
         "rejected": status_counts.get("rejected", 0),
         "offered": status_counts.get("offered", 0),

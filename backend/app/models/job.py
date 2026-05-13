@@ -66,3 +66,15 @@ class CoverLetterRequest(BaseModel):
     company: str
     job_description: str
     tone: str = "professional"
+
+
+class ApplyJobRequest(BaseModel):
+    """Client sends the full listing so the server can apply without a prior job cache."""
+
+    job: JobListing
+
+
+class ApplyQueuedResponse(BaseModel):
+    application_id: str
+    status: str = "pending"
+    message: str = "Application queued"

@@ -14,15 +14,25 @@ scheduler: AsyncIOScheduler | None = None
 
 
 async def daily_job_run() -> None:
-    """Daily scheduled task — placeholder hook. Real implementation would:
-    1. Load each user with auto_mode=true
-    2. Pull their preferences (keywords, location, platforms)
-    3. Run search_all_platforms() + match_jobs_with_resume()
-    4. Apply to top N matches via automation.apply.apply_to_jobs()
-    5. Send notification summary
-    """
+    """Daily scheduled task for users with automation_active and saved search keywords."""
+    from app.database import get_db
+    from app.services.automation_worker import run_user_automation_cycle
+
     logger.info("Daily auto-apply run started")
-    # TODO: implement once user preferences flow is finalized
+    try:
+        db = get_db()
+        cursor = db.users.find({"settings.automation_active": True})
+        async for doc in cursor:
+            ss = (doc.get("settings") or {}).get("saved_search") or {}
+            if not (ss.get("keywords") or "").strip():
+                continue
+            uid = str(doc["_id"])
+            try:
+                await run_user_automation_cycle(uid)
+            except Exception as e:
+                logger.exception("Daily run failed for user %s: %s", uid, e)
+    except Exception as e:
+        logger.exception("Daily scheduler run failed: %s", e)
     logger.info("Daily auto-apply run finished")
 
 

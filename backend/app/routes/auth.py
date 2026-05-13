@@ -29,9 +29,17 @@ async def register(data: UserCreate):
         "settings": {
             "daily_apply_limit": 20,
             "auto_mode": False,
+            "automation_active": False,
             "platforms": ["linkedin", "indeed", "naukri", "internshala", "wellfound", "foundit"],
             "notifications": {"telegram": False, "email": False},
             "theme": "dark",
+            "saved_search": {
+                "keywords": "",
+                "location": "",
+                "platforms": ["linkedin", "indeed"],
+                "remote_only": False,
+                "limit": 12,
+            },
         },
     }
     result = await db.users.insert_one(user_doc)

@@ -19,9 +19,10 @@ async def apply_to_jobs(
     jobs: list[JobListing],
     resume_path: str,
     cover_letter_fn: Callable[[JobListing], Awaitable[str]],
-    ai_answer_fn: Callable[[str], Awaitable[str]],
+    ai_answer_fn: Callable[[str, JobListing], Awaitable[str]],
     daily_limit: int | None = None,
     on_progress: Callable[[dict], Awaitable[None]] | None = None,
+    inter_job_delay: bool = True,
 ) -> list[dict]:
     limit = daily_limit or settings.DAILY_APPLY_LIMIT
     results: list[dict] = []
@@ -34,7 +35,11 @@ async def apply_to_jobs(
         try:
             adapter = get_adapter(job.platform)
             cover_letter = await cover_letter_fn(job)
-            result = await adapter.apply_to_job(job, resume_path, cover_letter, ai_answer_fn)
+
+            async def _bound_answer(question: str) -> str:
+                return await ai_answer_fn(question, job)
+
+            result = await adapter.apply_to_job(job, resume_path, cover_letter, _bound_answer)
             result["job_title"] = job.title
             result["company"] = job.company
             result["platform"] = job.platform
@@ -47,8 +52,8 @@ async def apply_to_jobs(
                 if on_progress:
                     await on_progress(result)
 
-            # Human-like break between applications
-            await asyncio.sleep(random.uniform(30, 90))
+            if inter_job_delay:
+                await asyncio.sleep(random.uniform(30, 90))
         except Exception as e:
             logger.exception(f"Failed to apply to {job.title} @ {job.company}: {e}")
             results.append({

@@ -103,3 +103,47 @@ docker compose up -d --build
 - **Playwright**: CPU-bound. Move scraping/applying into a separate worker container (Celery / RQ) for high throughput
 - **MongoDB**: Use a managed service (Atlas) past ~10K users
 - **AI calls**: Cache resume analysis (already keyed on user_id + resume hash)
+
+---
+
+## Vercel (frontend) + Render (API) + MongoDB Atlas (free)
+
+This stack works without a VPS: the React app on Vercel calls a long-running FastAPI container on Render. Playwright runs inside the API container (same as Docker Compose).
+
+### 1. MongoDB Atlas
+
+1. Create a free cluster at [https://www.mongodb.com/atlas](https://www.mongodb.com/atlas).
+2. Database Access: add a user + password.
+3. Network Access: allow `0.0.0.0/0` for development (tighten to Render egress IPs for production).
+4. Connect → Drivers → copy the SRV connection string, e.g. `mongodb+srv://USER:PASS@cluster.../applyflow_ai?retryWrites=true&w=majority`.
+
+### 2. Render (backend)
+
+1. Push this repo to GitHub.
+2. In Render: **New +** → **Blueprint** (or **Web Service** from repo).
+3. If using the included `render.yaml`, set **sync: false** secrets in the dashboard: `MONGODB_URL`, `OPENAI_API_KEY` (and optional `JWT_SECRET_KEY` if you do not want a generated value).
+4. Add environment variables:
+   - `MONGODB_URL` — Atlas URI
+   - `JWT_SECRET_KEY` — long random string (`python -c "import secrets; print(secrets.token_urlsafe(48))"`)
+   - `OPENAI_API_KEY` or `GEMINI_API_KEY` / `AI_PROVIDER`
+   - `CORS_ORIGINS` — your Vercel URL, e.g. `https://your-app.vercel.app` (no trailing slash). Comma-separate multiple origins.
+5. Deploy. Note the public URL, e.g. `https://applyflow-api.onrender.com`.
+
+Render free tier sleeps after inactivity; first request after sleep can take ~30–60s.
+
+### 3. Vercel (frontend)
+
+1. Import the GitHub repo in Vercel.
+2. Set **Root Directory** to `frontend`.
+3. Build: default `npm run build`, output `dist`.
+4. Environment variable: `VITE_API_URL` = your Render API URL (e.g. `https://applyflow-api.onrender.com`) with **no** `/api` suffix unless you put the API behind that path.
+
+### 4. GitHub
+
+Commit and push to your account. Connect Vercel and Render to the same repository; redeploy when you merge to `main`.
+
+### 5. Production notes
+
+- **Resume uploads** on Render use ephemeral disk unless you attach a persistent disk or switch to S3-style storage.
+- Set `SCHEDULER_ENABLED=true` on Render only if you want the daily automation cron; keep `SCHEDULER_CRON_*` in UTC.
+- Never commit real `.env` files; use host dashboards for secrets.

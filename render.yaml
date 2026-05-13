@@ -1,0 +1,22 @@
+# Render.com — free tier (spins down when idle). Pair with MongoDB Atlas (free).
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: applyflow-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./docker/Dockerfile.backend
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONPATH
+        value: /app:/app/backend
+      - key: PLAYWRIGHT_HEADLESS
+        value: "true"
+      - key: MONGODB_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false

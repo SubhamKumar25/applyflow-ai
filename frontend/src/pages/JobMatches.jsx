@@ -12,6 +12,7 @@ export default function JobMatches() {
   const [remoteOnly, setRemoteOnly] = useState(false)
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(false)
+  const [applyingIdx, setApplyingIdx] = useState(null)
 
   function togglePlatform(p) {
     setPlatforms((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]))
@@ -34,6 +35,18 @@ export default function JobMatches() {
       toast.error(err.response?.data?.detail || 'Search failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function onApply(match, idx) {
+    setApplyingIdx(idx)
+    try {
+      await api.post('/jobs/apply', { job: match.job })
+      toast.success('Application queued — check Dashboard / Recent applications.')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Apply failed')
+    } finally {
+      setApplyingIdx(null)
     }
   }
 
@@ -90,7 +103,7 @@ export default function JobMatches() {
       <div className="space-y-4">
         {matches.map((m, i) => (
           <motion.div
-            key={i}
+            key={`${m.job.url}-${i}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.02 }}
@@ -119,13 +132,23 @@ export default function JobMatches() {
                   ))}
                 </div>
               </div>
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 flex flex-col items-end gap-2">
                 <div className="text-xs text-slate-500">Match</div>
                 <div className={`text-4xl font-bold ${
                   m.match_score >= 75 ? 'text-green-600' :
                   m.match_score >= 50 ? 'text-amber-600' : 'text-slate-500'
                 }`}>{Math.round(m.match_score)}<span className="text-base text-slate-400">%</span></div>
-                <a href={m.job.url} target="_blank" rel="noreferrer" className="btn-primary text-sm mt-3 inline-flex">View</a>
+                <div className="flex flex-wrap justify-end gap-2 mt-1">
+                  <a href={m.job.url} target="_blank" rel="noreferrer" className="btn-secondary text-sm inline-flex">View</a>
+                  <button
+                    type="button"
+                    disabled={applyingIdx === i || !m.job.platform}
+                    onClick={() => onApply(m, i)}
+                    className="btn-primary text-sm inline-flex disabled:opacity-50"
+                  >
+                    {applyingIdx === i ? 'Applying…' : 'Apply'}
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

@@ -44,10 +44,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def _cors_origins() -> tuple[list[str], bool]:
+    raw = (settings.CORS_ORIGINS or "").strip()
+    if not raw:
+        return ["*"], False
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    return origins, True
+
+
+_origins, _creds = _cors_origins()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_origins,
+    allow_credentials=_creds,
     allow_methods=["*"],
     allow_headers=["*"],
 )
