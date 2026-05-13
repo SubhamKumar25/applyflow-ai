@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/*.log
+logs/
+
+# Uploads
+resumes/*
+!resumes/.gitkeep
+
+# Screenshots
+screenshots/*
+!screenshots/.gitkeep
+
+# Playwright session data
+automation/sessions/
+
+# Build artifacts
+*.egg-info/
+*.tsbuildinfo
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# pyenv
+.python-version

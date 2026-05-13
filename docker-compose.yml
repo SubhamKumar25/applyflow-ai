@@ -1,0 +1,41 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: applyflow-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: applyflow-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+    volumes:
+      - ./resumes:/app/resumes
+      - ./logs:/app/logs
+      - ./automation/sessions:/app/automation/sessions
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: applyflow-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  mongo_data:
